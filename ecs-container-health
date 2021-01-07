@@ -1,0 +1,28 @@
+#!/bin/bash
+
+set -e
+
+cluster="$1"
+service="$2"
+
+task_id=$(aws ecs list-tasks --cluster "$cluster" --service-name "$service" \
+              | jq -r '.taskArns[]' \
+              | fzf \
+              | perl -pnE 's!^.+/([^/]+)$!$1!')
+
+while :
+do
+    date
+
+    task=$(aws ecs describe-tasks --cluster "$cluster" --tasks "$task_id" | jq -r '.tasks[0]')
+
+    status=$(echo "$task" | jq '.lastStatus')
+    if [[ "$status" == "STOPPED" ]]; then
+        break
+    fi
+
+    echo "$task" | jq '.containers[] | [.name, .healthStatus] | @tsv' -r
+    echo ''
+
+    sleep 5
+done
