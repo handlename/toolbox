@@ -10,10 +10,16 @@ task_id=$(aws ecs list-tasks --cluster "$cluster" --service-name "$service" \
               | fzf \
               | perl -pnE 's!^.+/([^/]+)$!$1!')
 
+if [[ -z $task_id ]]; then
+    echo 'no task id' >&2
+    exit 1
+fi
+
+count=0
+width=0
+
 while :
 do
-    date
-
     task=$(aws ecs describe-tasks --cluster "$cluster" --tasks "$task_id" | jq -r '.tasks[0]')
 
     status=$(echo "$task" | jq '.lastStatus')
@@ -21,8 +27,39 @@ do
         break
     fi
 
-    echo "$task" | jq '.containers[] | [.name, .healthStatus] | @tsv' -r
-    echo ''
+    containers=$(echo "$task" | jq '.containers | map({"name":.name, "healthStatus":.healthStatus}) | sort_by(.name)')
+
+    if [[ $(expr $count % 10) == 0 ]]; then
+        names=$(echo "$containers" | jq '.[] | .name' | jq -r '.')
+        names=("timestamp" "${names[@]}")
+
+        for name in ${names[@]}; do
+            length=$(expr ${#name} + 1)
+
+            if (( $width < $length )); then
+                width=$length
+            fi
+        done
+
+        for name in ${names[@]}; do
+            printf "%${width}s" "$name"
+        done
+
+        echo ""
+    fi
+
+    statuses=$(echo "$containers" | jq '.[] | .healthStatus' | jq -s -r '. | @tsv')
+    statuses=($(echo -ne "$(date +"%Y-%m-%dT%H:%M:%S")") ${statuses[@]})
+
+    for status in ${statuses[@]}; do
+        printf "%${width}s" "$status"
+    done
+
+    echo ""
+
+    count=$(expr $count + 1)
+    names=()
+    statuses=()
 
     sleep 5
 done
