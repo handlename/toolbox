@@ -1,0 +1,17 @@
+#!/usr/bin/env perl
+use strict;
+use warnings;
+use utf8;
+use feature 'say';
+
+use JSON qw{encode_json};
+use List::MoreUtils qw{mesh};
+
+my @fields = qw/date time x-edge-location sc-bytes c-ip cs-method cs(Host) cs-uri-stem sc-status cs(Referer) cs(User-Agent) cs-uri-query cs(Cookie) x-edge-result-type x-edge-request-id x-host-header cs-protocol cs-bytes time-taken x-forwarded-for ssl-protocol ssl-cipher x-edge-response-result-type cs-protocol-version fle-status fle-encrypted-fields c-port time-to-first-byte x-edge-detailed-result-type sc-content-type sc-content-len sc-range-start sc-range-end/;
+
+while (my $line = <>) {
+    next if $line =~ /^#/;
+
+    my @params = split "\t", $line;
+    say encode_json(+{mesh(@fields, @params)});
+}
