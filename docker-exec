@@ -1,0 +1,12 @@
+#!/bin/bash
+
+set -e
+
+cmd=${1:-bash}
+
+id=$(docker container list | fzf --header-lines 1 | awk '{print $1}')
+if [[ -z $id ]]; then
+    exit 0
+fi
+
+exec docker exec -it $id $cmd
