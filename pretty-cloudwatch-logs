@@ -1,0 +1,22 @@
+#!/usr/bin/env perl
+use strict;
+use warnings;
+use 5.30.0;
+
+use JSON::XS;
+my $json = JSON::XS->new->pretty;
+
+while (my $line = <STDIN>) {
+    chomp $line;
+
+    my ($ts, $stream, $body) = $line =~ /(\S+) (\S+) (.+)/;
+
+    say "${ts} ${stream}";
+
+    if ($body =~ /^\{/) {
+        say $json->encode($json->decode($body));
+    }
+    else {
+        say "${body}\n";
+    }
+}
