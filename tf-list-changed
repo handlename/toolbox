@@ -34,19 +34,27 @@ function build_id() {
     local name=$(echo "$resource" | jq -r '.name')
     local index=$(echo "$resource" | jq -r '.index | if . then . else "" end')
 
-    local id=""
+    local parts=()
 
     if [[ -n "$module" ]]; then
-        id="${module}"
+        parts+=("$module")
     fi
 
-    id="${id}.${type}.${name}"
+    parts+=("$type" "$name")
 
     if [[ -n "$index" ]]; then
-        id="${id}[\"${index}\"]"
+        parts+=("[\"${index}\"]")
     fi
 
+    id=$(join '.' "${parts[@]}")
+
     echo -e "${actions}\t${id}"
+}
+
+function join() {
+    local IFS="$1"
+    shift
+    echo "$*"
 }
 
 main $@
