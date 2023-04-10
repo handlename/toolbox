@@ -28,11 +28,19 @@ function build_id() {
     local resource="$1"
 
     local actions=$(echo "$resource" | jq -r '.change.actions | join(",")')
+
+    local module=$(echo "$resource" | jq -r '.module_address | if . then . else "" end')
     local type=$(echo "$resource" | jq -r '.type')
     local name=$(echo "$resource" | jq -r '.name')
-    local index=$(echo "$resource" | jq -r 'if .index then .index else "" end')
+    local index=$(echo "$resource" | jq -r '.index | if . then . else "" end')
 
-    id="${type}.${name}"
+    local id=""
+
+    if [[ -n "$module" ]]; then
+        id="${module}"
+    fi
+
+    id="${id}.${type}.${name}"
 
     if [[ -n "$index" ]]; then
         id="${id}[\"${index}\"]"
