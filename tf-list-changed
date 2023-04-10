@@ -1,0 +1,44 @@
+#!/bin/bash
+
+# SYNOPSIS
+#     $ terraform plan -out=path/to/outfile
+#     $ tf-list-changed path/to/outfile
+
+set -eu
+
+function main() {
+    plan_file="$1"
+
+    if [[ ! -e "$plan_file" ]]; then
+        echo "${plan_file} is not exists" >/dev/stderr
+        exit 1
+    fi
+
+    resources_b64=$(
+        terraform show -json "$plan_file" \
+        | jq -cr '.resource_changes[] | select(.change.actions[0] != "no-op") | @base64'
+    )
+
+    for resource_b64 in ${resources_b64[@]}; do
+        echo $(build_id "$(echo "$resource_b64" | base64 -d)")
+    done
+}
+
+function build_id() {
+    local resource="$1"
+
+    local actions=$(echo "$resource" | jq -r '.change.actions | join(",")')
+    local type=$(echo "$resource" | jq -r '.type')
+    local name=$(echo "$resource" | jq -r '.name')
+    local index=$(echo "$resource" | jq -r 'if .index then .index else "" end')
+
+    id="${type}.${name}"
+
+    if [[ -n "$index" ]]; then
+        id="${id}[\"${index}\"]"
+    fi
+
+    echo -e "${actions}\t${id}"
+}
+
+main $@
