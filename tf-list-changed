@@ -42,11 +42,11 @@ function build_id() {
 
     parts+=("$type" "$name")
 
-    if [[ -n "$index" ]]; then
-        parts+=("[\"${index}\"]")
-    fi
-
     id=$(join '.' "${parts[@]}")
+
+    if [[ -n "$index" ]]; then
+        id="${id}[\"${index}\"]"
+    fi
 
     echo -e "${actions}\t${id}"
 }
